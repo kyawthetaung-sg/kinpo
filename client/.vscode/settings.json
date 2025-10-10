@@ -1,0 +1,31 @@
+{
+    "cSpell.words": ["btsubmenu", "hookform", "antd", "Kenja"],
+    "css.lint.unknownAtRules": "ignore",
+    "tabnine.experimentalAutoImports": true,
+    "redhat.telemetry.enabled": true,
+    "editor.fontSize": 16,
+    "editor.fontVariations": false,
+    "terminal.integrated.tabStopWidth": 2,
+    "prettier.tabWidth": 2,
+    "[jsonc]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit",
+        "source.fixAll": "always"
+    },
+    "typescript.tsserver.log": "verbose",
+    "[typescriptreact]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[css]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescript]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
+}

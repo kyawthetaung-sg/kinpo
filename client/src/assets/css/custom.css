@@ -1,0 +1,27 @@
+body {
+  background-color: #e1e1e2;
+}
+.user-nav a.active {
+  font-weight: bold;
+  color: #f6c157;
+  text-decoration: underline;
+  text-decoration-color: #f6c157;
+  text-underline-offset: 6px;
+  text-decoration-thickness: 3px;
+}
+a.active {
+  font-weight: bold;
+  color: #1af7e5;
+}
+.bg-sidebar {
+  background-color: #024357;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 15s linear infinite;
+}
