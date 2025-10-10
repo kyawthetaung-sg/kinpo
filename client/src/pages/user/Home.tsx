@@ -42,7 +42,7 @@ const Home = () => {
 
       try {
         const JSMpeg = (await import("jsmpeg-player")).default;
-        const videoUrl = `ws://localhost:${cameras[index].wsPort}`;
+        const videoUrl = `ws://${window.location.hostname}:${cameras[index].wsPort}`;
 
         const newPlayer = new JSMpeg.Player(videoUrl, {
           canvas: ref.current,
