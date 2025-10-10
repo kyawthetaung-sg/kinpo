@@ -32,7 +32,7 @@ const Error404: React.FC<Error404Props> = ({ redirectTo = "/" }) => {
       )}
     >
       <img
-        src="/src/assets/images/astronaut.png"
+        src="/images/astronaut.png"
         alt="Error404"
         className="absolute top-4 right-4 w-60 h-auto"
       />

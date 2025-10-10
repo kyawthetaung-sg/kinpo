@@ -124,7 +124,7 @@ const Home = () => {
           <div className="bg-[#2c1f16] flex flex-col gap-3 w-[150px]">
             <div className="flex items-center justify-center">
               <img
-                src="/src/assets/images/logo.png"
+                src="/images/logo.png"
                 alt="card-grid"
                 className="w-25 object-contain"
               />
@@ -203,7 +203,7 @@ const Home = () => {
 
                     <CardContent className="p-1 flex items-center justify-center">
                       <img
-                        src="/src/assets/images/g1.png"
+                        src="/images/g1.png"
                         alt="card-grid"
                         className="w-full h-full object-contain"
                       />
