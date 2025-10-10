@@ -3,7 +3,6 @@ import Main from "./layouts/user/Main";
 import Error from "./pages/Error";
 import {
   Home,
-  VideoPlayer,
 } from "./pages/user";
 
 function App() {
@@ -14,7 +13,6 @@ function App() {
       errorElement: <Error />,
       children: [
         { index: true, element: <Home /> },
-        { path: "/players", element: <VideoPlayer /> },
       ],
     },
   ]);
