@@ -22,7 +22,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ camera, onBack }) => {
     const loadPlayer = async () => {
       try {
         const JSMpeg = (await import("jsmpeg-player")).default;
-        const videoUrl = `ws://${window.location.hostname}:${camera.wsPort}`;
+        const videoUrl = window.location.protocol === "https:"
+          ? `wss://${window.location.hostname}:${camera.wsPort}`
+          : `ws://${window.location.hostname}:${camera.wsPort}`;
 
         const newPlayer = new JSMpeg.Player(videoUrl, {
           canvas,
