@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Camera, JSMpegPlayer } from "@/types";
-import { CalendarDays, CircleUserRound, Expand, Headset, ReceiptJapaneseYen, Settings, SquareArrowOutUpRight, Volume2 } from "lucide-react";
+import { CalendarDays, CircleUserRound, Expand, Headset, ReceiptJapaneseYen, Settings, SquareArrowOutUpRight, Volume2, ArrowRightLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import VideoPlayer from "./VideoPlayer";
 
@@ -16,9 +16,13 @@ const Home = () => {
   const [time, setTime] = useState(new Date());
   const canvasRef1 = useRef<HTMLCanvasElement>(null!);
   const canvasRef2 = useRef<HTMLCanvasElement>(null!);
+  const canvasRef3 = useRef<HTMLCanvasElement>(null!);
   const [players, setPlayers] = useState<(JSMpegPlayer | null)[]>([null, null]);
   const [cameras, setCameras] = useState<Camera[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<Camera | null>(null);
+  const [category, setCategory] = useState<number | null>(null);
+  const canvasRefs = [canvasRef1, canvasRef2, canvasRef3];
+  const [currentCanvasIndex, setCurrentCanvasIndex] = useState(0);
 
   useEffect(() => {
     fetchCameras()
@@ -67,6 +71,7 @@ const Home = () => {
 
     loadPlayer(0, canvasRef1);
     loadPlayer(1, canvasRef2);
+    loadPlayer(2, canvasRef3);
 
     return () => {
       players.forEach((player) => player?.destroy());
@@ -82,8 +87,19 @@ const Home = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const swapCamera = async () => {
+    const nextIndex = (currentCanvasIndex + 1) % canvasRefs.length;
+    setCurrentCanvasIndex(nextIndex);
+    console.log(`Canvas ref switched to: canvasRef${nextIndex + 1}`);
+  };
+
   const dateStr = time.toLocaleDateString();
   const timeStr = time.toLocaleTimeString();
+
+  const filteredCameras =
+    category === null
+      ? cameras
+      : cameras.filter((c) => Number(c.category) === category);
 
   return (
     <div className="h-screen overflow-hidden flex flex-col">
@@ -144,29 +160,56 @@ const Home = () => {
             </div>
 
             <Button
-              variant="secondary"
-              className="bg-[#8b5e34] hover:bg-[#9a6d40] text-2xl p-6 text-white rounded-none rounded-tl-2xl"
-            >
-              全部
+                onClick={() => setCategory(null)}
+                variant={category === null ? "default" : "secondary"}
+                className={`text-2xl p-6 text-white rounded-none rounded-tl-2xl ${
+                  category === null
+                    ? "bg-yellow-600 hover:bg-yellow-700"
+                    : "bg-[#8b5e34] hover:bg-[#9a6d40]"
+                }`}
+              >
+                全部
             </Button>
 
             <Button
-              variant="secondary"
-              className="bg-[#8b5e34] hover:bg-[#9a6d40] text-2xl p-6 text-white rounded-none rounded-tl-2xl"
+              onClick={() => setCategory(3)}
+              variant={category === 3 ? "default" : "secondary"}
+              className={`text-2xl p-6 text-white rounded-none rounded-tl-2xl ${
+                category === 3
+                  ? "bg-yellow-600 hover:bg-yellow-700"
+                  : "bg-[#8b5e34] hover:bg-[#9a6d40]"
+              }`}
+            >
+              牛牛
+            </Button>
+
+            <Button
+              onClick={() => setCategory(1)}
+              variant={category === 1 ? "default" : "secondary"}
+              className={`text-2xl p-6 text-white rounded-none rounded-tl-2xl ${
+                category === 1
+                  ? "bg-yellow-600 hover:bg-yellow-700"
+                  : "bg-[#8b5e34] hover:bg-[#9a6d40]"
+              }`}
             >
               百家乐
             </Button>
 
             <Button
-              variant="secondary"
-              className="bg-[#8b5e34] hover:bg-[#9a6d40] text-2xl p-6 text-white rounded-none rounded-tl-2xl"
+              onClick={() => setCategory(2)}
+              variant={category === 2 ? "default" : "secondary"}
+              className={`text-2xl p-6 text-white rounded-none rounded-tl-2xl ${
+                category === 2
+                  ? "bg-yellow-600 hover:bg-yellow-700"
+                  : "bg-[#8b5e34] hover:bg-[#9a6d40]"
+              }`}
             >
               龙虎
             </Button>
 
             <Button
               variant="secondary"
-              className="bg-[#8b5e34] hover:bg-[#9a6d40] text-2xl p-6 text-white rounded-none rounded-tl-2xl"
+              className="text-2xl p-6 text-white rounded-none rounded-tl-2xl bg-[#8b5e34] hover:bg-[#9a6d40]"
             >
               多台下注
             </Button>
@@ -188,7 +231,7 @@ const Home = () => {
           <div className="flex-1 bg-[#1e1611] overflow-hidden">
             <ScrollArea className="h-full p-4 scrollbar-hide">
               <div className="grid grid-cols-2 gap-4">
-                {cameras.map((camera) => (
+                {filteredCameras .map((camera) => (
                   <Card
                     key={camera.id}
                     onClick={() => setSelectedCamera(camera)}
@@ -241,10 +284,19 @@ const Home = () => {
             <div className="space-y-3">
               <div className="aspect-video bg-[#4a362a] flex items-center justify-center text-sm text-white relative overflow-hidden">
                 <canvas
-                  ref={canvasRef1}
+                  ref={canvasRefs[currentCanvasIndex]}
                   className="absolute inset-0 w-full h-full object-contain"
                 />
+
+                <button
+                  onClick={swapCamera}
+                  className="absolute bottom-2 left-2 text-yellow-500 hover:text-yellow-300 transition-colors"
+                >
+                  <ArrowRightLeft className="w-5 h-5" />
+                </button>
               </div>
+
+
               <div className="aspect-video bg-[#4a362a] flex items-center justify-center text-sm text-white relative overflow-hidden">
                 <canvas
                   ref={canvasRef2}

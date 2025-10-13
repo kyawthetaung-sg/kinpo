@@ -1,5 +1,6 @@
 export interface Camera {
   id: number;
+  category: number;
   code: string;
   name: string;
   url: string;
