@@ -15,10 +15,10 @@ app.use(cors());
 app.use(express.json());
 app.use('/streams', express.static(path.join(__dirname, 'streams')));
 
-// Sample camera configurations
 const cameras = [
   {
     id: 1,
+    category: 1,
     code: 'G20',
     name: '开牌',
     url: 'rtsp://103.144.9.10:554/0',
@@ -31,6 +31,7 @@ const cameras = [
   },
   {
     id: 2,
+    category: 1,
     code: 'N8',
     name: '开牌',
     url: 'rtsp://103.144.9.10:554/0',
@@ -43,10 +44,50 @@ const cameras = [
   },
   {
     id: 3,
-    code: 'G03',
+    category: 1,
+    code: 'G05',
+    name: '开牌',
+    url: 'rtsp://103.144.9.10:554/1',
+    wsPort: 9997,
+    active: false,
+    banker: 17,
+    player: 19,
+    tie: 5,
+    total: 41,
+  },
+  {
+    id: 4,
+    category: 2,
+    code: 'G06',
     name: '开牌',
     url: 'rtsp://103.144.9.10:554/0',
-    wsPort: 9997,
+    wsPort: 9994,
+    active: false,
+    banker: 17,
+    player: 19,
+    tie: 5,
+    total: 41,
+  },
+  {
+    id: 5,
+    category: 2,
+    code: 'G12',
+    name: '开牌',
+    url: 'rtsp://103.144.9.10:554/0',
+    wsPort: 9996,
+    active: false,
+    banker: 17,
+    player: 19,
+    tie: 5,
+    total: 41,
+  },
+  {
+    id: 6,
+    category: 3,
+    code: 'G13',
+    name: '开牌',
+    url: 'rtsp://103.144.9.10:554/0',
+    wsPort: 9995,
     active: false,
     banker: 17,
     player: 19,
