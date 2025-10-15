@@ -4,12 +4,30 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
+import https from 'https';
+import http from 'http';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3001;
+
+const isProduction = process.env.NODE_ENV === 'production';
+let server;
+
+if (isProduction) {
+  const sslOptions = {
+    cert: fs.readFileSync('/etc/letsencrypt/live/shalkaung.shop-0001/fullchain.pem'),
+    key: fs.readFileSync('/etc/letsencrypt/live/shalkaung.shop-0001/privkey.pem')
+  };
+  server = https.createServer(sslOptions, app);
+  console.log('Running in PRODUCTION mode with HTTPS');
+} else {
+  server = http.createServer(app);
+  console.log('Running in DEVELOPMENT mode with HTTP');
+}
 
 app.use(cors());
 app.use(express.json());
@@ -115,7 +133,16 @@ function createRTSPStream(cameraId, rtspUrl, wsPort) {
     stdio: ['ignore', 'pipe', 'ignore']
   });
 
-  const wss = new WebSocketServer({ port: wsPort });
+  let wss;
+
+  if (isProduction) {
+    wss = new WebSocketServer({
+      server: server,
+      path: `/ws/${wsPort}`
+    });
+  } else {
+    wss = new WebSocketServer({ port: wsPort });
+  }
 
   wss.on('connection', (ws) => {
     console.log(`Client connected to camera ${cameraId}`);
