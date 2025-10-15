@@ -46,9 +46,15 @@ const Home = () => {
 
       try {
         const JSMpeg = (await import("jsmpeg-player")).default;
-        const videoUrl = window.location.protocol === "https:"
-          ? `wss://${window.location.hostname}:${cameras[index].wsPort}`
-          : `ws://${window.location.hostname}:${cameras[index].wsPort}`;
+
+        const isProduction = window.location.protocol === 'https:';
+        let videoUrl;
+
+        if (isProduction) {
+          videoUrl = `wss://${window.location.host}/ws/${cameras[index].wsPort}`;
+        } else {
+          videoUrl = `ws://${window.location.hostname}:${cameras[index].wsPort}`;
+        }
 
         const newPlayer = new JSMpeg.Player(videoUrl, {
           canvas: ref.current,
