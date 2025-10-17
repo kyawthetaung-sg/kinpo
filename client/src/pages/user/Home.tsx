@@ -7,10 +7,24 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Camera, JSMpegPlayer } from "@/types";
-import { CalendarDays, CircleUserRound, Expand, Headset, ReceiptJapaneseYen, Settings, SquareArrowOutUpRight, Volume2, ArrowRightLeft } from "lucide-react";
+import type { JSMpegPlayer, Category, Game } from "@/types";
+import {
+  CalendarDays,
+  CircleUserRound,
+  Expand,
+  Headset,
+  ReceiptJapaneseYen,
+  Settings,
+  SquareArrowOutUpRight,
+  Volume2,
+  ArrowRightLeft,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import VideoPlayer from "./VideoPlayer";
+import { getCategories } from "@/api/category";
+import { getGames, startAllGames } from "@/api/game";
+import { useLoading } from "@/contexts/LoadingContext";
+import { toast } from "sonner";
 
 const Home = () => {
   const [time, setTime] = useState(new Date());
@@ -18,42 +32,68 @@ const Home = () => {
   const canvasRef2 = useRef<HTMLCanvasElement>(null!);
   const canvasRef3 = useRef<HTMLCanvasElement>(null!);
   const [players, setPlayers] = useState<(JSMpegPlayer | null)[]>([null, null]);
-  const [cameras, setCameras] = useState<Camera[]>([]);
-  const [selectedCamera, setSelectedCamera] = useState<Camera | null>(null);
-  const [category, setCategory] = useState<number | null>(null);
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [category, setCategory] = useState<string | null>(null);
   const canvasRefs = [canvasRef1, canvasRef2, canvasRef3];
   const [currentCanvasIndex, setCurrentCanvasIndex] = useState(0);
+  const { setIsLoading } = useLoading();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
 
   useEffect(() => {
-    fetchCameras()
-  }, [])
+    const initialize = async () => {
+      await startAllGames();
+      fetchGames();
+      fetchCategories();
+    };
+    initialize();
+  }, []);
 
-  const fetchCameras = async () => {
+  const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/cameras')
-      const data = await response.json()
-      setCameras(data)
+      setIsLoading(true);
+      const data = await getCategories();
+      setCategories(data);
     } catch (error) {
-      console.error('Failed to fetch cameras:', error)
+      console.error("Error fetching categories", error);
+      toast.error("Something went wrong.");
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
+
+  const fetchGames = async () => {
+    try {
+      setIsLoading(true);
+      const data = await getGames();
+      setGames(data);
+    } catch (error) {
+      console.error("Error fetching games", error);
+      toast.error("Something went wrong.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!cameras || cameras.length === 0 || selectedCamera) return;
+    if (!games || games.length === 0 || selectedGame) return;
 
-    const loadPlayer = async (index: number, ref: React.RefObject<HTMLCanvasElement>) => {
-      if (!cameras[index] || !cameras[index].active || !ref.current) return;
+    const loadPlayer = async (
+      index: number,
+      ref: React.RefObject<HTMLCanvasElement>
+    ) => {
+      if (!games[index] || !games[index].active || !ref.current) return;
 
       try {
         const JSMpeg = (await import("jsmpeg-player")).default;
 
-        const isProduction = window.location.protocol === 'https:';
+        const isProduction = window.location.protocol === "https:";
         let videoUrl;
 
         if (isProduction) {
-          videoUrl = `wss://${window.location.host}/ws/${cameras[index].wsPort}`;
+          videoUrl = `wss://${window.location.host}/ws/${games[index].wsPort}`;
         } else {
-          videoUrl = `ws://${window.location.hostname}:${cameras[index].wsPort}`;
+          videoUrl = `ws://${window.location.hostname}:${games[index].wsPort}`;
         }
 
         const newPlayer = new JSMpeg.Player(videoUrl, {
@@ -71,7 +111,7 @@ const Home = () => {
           return updated;
         });
       } catch (error) {
-        console.error(`Error initializing camera ${index + 1}:`, error);
+        console.error(`Error initializing game ${index + 1}:`, error);
       }
     };
 
@@ -83,7 +123,7 @@ const Home = () => {
       players.forEach((player) => player?.destroy());
       setPlayers([null, null]);
     };
-  }, [cameras, selectedCamera]);
+  }, [games, selectedGame]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -93,7 +133,7 @@ const Home = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const swapCamera = async () => {
+  const swapGame = async () => {
     const nextIndex = (currentCanvasIndex + 1) % canvasRefs.length;
     setCurrentCanvasIndex(nextIndex);
     console.log(`Canvas ref switched to: canvasRef${nextIndex + 1}`);
@@ -102,70 +142,66 @@ const Home = () => {
   const dateStr = time.toLocaleDateString();
   const timeStr = time.toLocaleTimeString();
 
-  const filteredCameras =
+  const filteredGames =
     category === null
-      ? cameras
-      : cameras.filter((c) => Number(c.category) === category);
+      ? games
+      : games.filter((game) => game.category._id === category);
 
   return (
     <div className="h-screen overflow-hidden flex flex-col">
-      {selectedCamera ? (
-      <VideoPlayer
-        camera={selectedCamera}
-        onBack={() => setSelectedCamera(null)}
-      />
-    ) : (
-      <>
-        <div className="h-16 bg-gradient-to-r from-[#3b2a1f] to-[#2c1f16] flex px-4 text-white">
-          <div className="flex items-center w-full gap-1">
-            <Volume2 className="w-6 h-6 text-yellow-500" />
-            <div className="flex-1 bg-gray-900 rounded-tl-lg rounded-l-lg px-2 overflow-hidden">
-              <span className="text-lg whitespace-nowrap overflow-hidden text-ellipsis block animate-marquee">
-                办理；详情请您咨询客服，感谢您的支持！请以准公司官方网址：m.870213011.com、pc.870213011.com
-              </span>
-            </div>
+      {selectedGame ? (
+        <VideoPlayer game={selectedGame} onBack={() => setSelectedGame(null)} />
+      ) : (
+        <>
+          <div className="h-16 bg-gradient-to-r from-[#3b2a1f] to-[#2c1f16] flex px-4 text-white">
+            <div className="flex items-center w-full gap-1">
+              <Volume2 className="w-6 h-6 text-yellow-500" />
+              <div className="flex-1 bg-gray-900 rounded-tl-lg rounded-l-lg px-2 overflow-hidden">
+                <span className="text-lg whitespace-nowrap overflow-hidden text-ellipsis block animate-marquee">
+                  办理；详情请您咨询客服，感谢您的支持！请以准公司官方网址：m.870213011.com、pc.870213011.com
+                </span>
+              </div>
 
-            {/* Right icons */}
-            <div className="ml-2 flex items-center gap-3">
-              <button className="text-yellow-600 px-1">
-                <CalendarDays className="w-5 h-5" />
-              </button>
-              <button className="text-yellow-600 px-1">
-                <Expand className="w-5 h-5" />
-              </button>
-              <button className="text-yellow-600 px-1">
-                <Settings className="w-5 h-5" />
-              </button>
-              <button className="text-yellow-600 px-1">
-                <SquareArrowOutUpRight className="w-5 h-5" />
-              </button>
+              {/* Right icons */}
+              <div className="ml-2 flex items-center gap-3">
+                <button className="text-yellow-600 px-1">
+                  <CalendarDays className="w-5 h-5" />
+                </button>
+                <button className="text-yellow-600 px-1">
+                  <Expand className="w-5 h-5" />
+                </button>
+                <button className="text-yellow-600 px-1">
+                  <Settings className="w-5 h-5" />
+                </button>
+                <button className="text-yellow-600 px-1">
+                  <SquareArrowOutUpRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-
-        <div className="flex flex-1 overflow-hidden">
-          <div className="bg-[#2c1f16] flex flex-col gap-3 w-[150px]">
-            <div className="flex items-center justify-center">
-              <img
-                src="/images/logo.png"
-                alt="card-grid"
-                className="w-25 object-contain"
-              />
-            </div>
-
-            <div className="flex flex-col items-center p-2 gap-1">
-              <div className="flex items-center text-sm text-yellow-200 bg-gray-900 rounded-xl w-full py-1 px-2">
-                <CircleUserRound className="w-4 h-4 mr-1" />
-                <span>kinpo</span>
+          <div className="flex flex-1 overflow-hidden">
+            <div className="bg-[#2c1f16] flex flex-col gap-3 w-[150px]">
+              <div className="flex items-center justify-center">
+                <img
+                  src="/images/logo.png"
+                  alt="card-grid"
+                  className="w-25 object-contain"
+                />
               </div>
-              <div className="flex items-center text-sm text-yellow-200 bg-gray-900 rounded-xl w-full py-1 px-2">
-                <ReceiptJapaneseYen className="w-4 h-4 mr-1" />
-                <span>53</span>
-              </div>
-            </div>
 
-            <Button
+              <div className="flex flex-col items-center p-2 gap-1">
+                <div className="flex items-center text-sm text-yellow-200 bg-gray-900 rounded-xl w-full py-1 px-2">
+                  <CircleUserRound className="w-4 h-4 mr-1" />
+                  <span>kinpo</span>
+                </div>
+                <div className="flex items-center text-sm text-yellow-200 bg-gray-900 rounded-xl w-full py-1 px-2">
+                  <ReceiptJapaneseYen className="w-4 h-4 mr-1" />
+                  <span>53</span>
+                </div>
+              </div>
+
+              <Button
                 onClick={() => setCategory(null)}
                 variant={category === null ? "default" : "secondary"}
                 className={`text-2xl p-6 text-white rounded-none rounded-tl-2xl ${
@@ -175,145 +211,123 @@ const Home = () => {
                 }`}
               >
                 全部
-            </Button>
+              </Button>
 
-            <Button
-              onClick={() => setCategory(3)}
-              variant={category === 3 ? "default" : "secondary"}
-              className={`text-2xl p-6 text-white rounded-none rounded-tl-2xl ${
-                category === 3
-                  ? "bg-yellow-600 hover:bg-yellow-700"
-                  : "bg-[#8b5e34] hover:bg-[#9a6d40]"
-              }`}
-            >
-              牛牛
-            </Button>
-
-            <Button
-              onClick={() => setCategory(1)}
-              variant={category === 1 ? "default" : "secondary"}
-              className={`text-2xl p-6 text-white rounded-none rounded-tl-2xl ${
-                category === 1
-                  ? "bg-yellow-600 hover:bg-yellow-700"
-                  : "bg-[#8b5e34] hover:bg-[#9a6d40]"
-              }`}
-            >
-              百家乐
-            </Button>
-
-            <Button
-              onClick={() => setCategory(2)}
-              variant={category === 2 ? "default" : "secondary"}
-              className={`text-2xl p-6 text-white rounded-none rounded-tl-2xl ${
-                category === 2
-                  ? "bg-yellow-600 hover:bg-yellow-700"
-                  : "bg-[#8b5e34] hover:bg-[#9a6d40]"
-              }`}
-            >
-              龙虎
-            </Button>
-
-            <Button
-              variant="secondary"
-              className="text-2xl p-6 text-white rounded-none rounded-tl-2xl bg-[#8b5e34] hover:bg-[#9a6d40]"
-            >
-              多台下注
-            </Button>
-
-            <div className="text-lg text-center text-gray-400">
-              {dateStr}
-              <br />
-              {timeStr}
-            </div>
-            <Button
-              variant="secondary"
-              className="bg-[#8b5e34] hover:bg-[#9a6d40] text-2xl p-6 text-white rounded-none mt-auto flex items-center justify-center gap-3"
-            >
-              <Headset className="w-6 h-6" />
-              在线客服
-            </Button>
-          </div>
-
-          <div className="flex-1 bg-[#1e1611] overflow-hidden">
-            <ScrollArea className="h-full p-4 scrollbar-hide">
-              <div className="grid grid-cols-2 gap-4">
-                {filteredCameras .map((camera) => (
-                  <Card
-                    key={camera.id}
-                    onClick={() => setSelectedCamera(camera)}
-                    className="bg-[#4a362a] rounded-sm border border-gray-600 text-white py-0 gap-0"
-                  >
-                    <CardHeader className="flex justify-between items-center">
-                      <CardTitle className="text-white text-2xl font-bold">
-                        {camera.code}
-                      </CardTitle>
-                      <div className="bg-black text-white text-xl px-5 py-1 rounded">
-                        {camera.name}
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="p-1 flex items-center justify-center">
-                      <img
-                        src="/images/g1.png"
-                        alt="card-grid"
-                        className="w-full h-full object-contain"
-                      />
-                    </CardContent>
-
-                    <CardFooter>
-                      <div className="grid grid-cols-4 gap-4 pb-3">
-                        <div className="flex gap-2">
-                          <span className="text-red-600">庄</span>
-                          <span>{camera.banker}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-cyan-300">闲</span>
-                          <span>{camera.player}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-lime-500">和</span>
-                          <span>{camera.tie}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="text-white">总数</span>
-                          <span>{camera.total}</span>
-                        </div>
-                      </div>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-
-          <div className="w-[250px] bg-[#2c1f16] flex flex-col justify-between p-3">
-            <div className="space-y-3">
-              <div className="aspect-video bg-[#4a362a] flex items-center justify-center text-sm text-white relative overflow-hidden">
-                <canvas
-                  ref={canvasRefs[currentCanvasIndex]}
-                  className="absolute inset-0 w-full h-full object-contain"
-                />
-
-                <button
-                  onClick={swapCamera}
-                  className="absolute bottom-2 left-2 text-yellow-500 hover:text-yellow-300 transition-colors"
+              {categories.map((c) => (
+                <Button
+                  key={c._id}
+                  onClick={() => setCategory(c._id)}
+                  variant={category === c._id ? "default" : "secondary"}
+                  className={`text-2xl p-6 text-white rounded-none rounded-tl-2xl ${
+                    category === c._id
+                      ? "bg-yellow-600 hover:bg-yellow-700"
+                      : "bg-[#8b5e34] hover:bg-[#9a6d40]"
+                  }`}
                 >
-                  <ArrowRightLeft className="w-5 h-5" />
-                </button>
+                  {c.name}
+                </Button>
+              ))}
+
+              <Button
+                variant="secondary"
+                className="text-2xl p-6 text-white rounded-none rounded-tl-2xl bg-[#8b5e34] hover:bg-[#9a6d40]"
+              >
+                多台下注
+              </Button>
+
+              <div className="text-lg text-center text-gray-400">
+                {dateStr}
+                <br />
+                {timeStr}
               </div>
+              <Button
+                variant="secondary"
+                className="bg-[#8b5e34] hover:bg-[#9a6d40] text-2xl p-6 text-white rounded-none mt-auto flex items-center justify-center gap-3"
+              >
+                <Headset className="w-6 h-6" />
+                在线客服
+              </Button>
+            </div>
 
+            <div className="flex-1 bg-[#1e1611] overflow-hidden">
+              <ScrollArea className="h-full p-4 scrollbar-hide">
+                <div className="grid grid-cols-2 gap-4">
+                  {filteredGames.map((game) => (
+                    <Card
+                      key={game._id}
+                      onClick={() => setSelectedGame(game)}
+                      className="bg-[#4a362a] rounded-sm border border-gray-600 text-white py-0 gap-0"
+                    >
+                      <CardHeader className="flex justify-between items-center">
+                        <CardTitle className="text-white text-2xl font-bold">
+                          {game.name}
+                        </CardTitle>
+                        <div className="bg-black text-white text-xl px-5 py-1 rounded">
+                          开牌
+                        </div>
+                      </CardHeader>
 
-              <div className="aspect-video bg-[#4a362a] flex items-center justify-center text-sm text-white relative overflow-hidden">
-                <canvas
-                  ref={canvasRef2}
-                  className="absolute inset-0 w-full h-full object-contain"
-                />
+                      <CardContent className="p-1 flex items-center justify-center">
+                        <img
+                          src="/images/g1.png"
+                          alt="card-grid"
+                          className="w-full h-full object-contain"
+                        />
+                      </CardContent>
+
+                      <CardFooter>
+                        <div className="grid grid-cols-4 gap-4 pb-3">
+                          <div className="flex gap-2">
+                            <span className="text-red-600">庄</span>
+                            <span>17</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="text-cyan-300">闲</span>
+                            <span>19</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="text-lime-500">和</span>
+                            <span>5</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="text-white">总数</span>
+                            <span>41</span>
+                          </div>
+                        </div>
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+
+            <div className="w-[250px] bg-[#2c1f16] flex flex-col justify-between p-3">
+              <div className="space-y-3">
+                <div className="aspect-video bg-[#4a362a] flex items-center justify-center text-sm text-white relative overflow-hidden">
+                  <canvas
+                    ref={canvasRefs[currentCanvasIndex]}
+                    className="absolute inset-0 w-full h-full object-contain"
+                  />
+
+                  <button
+                    onClick={swapGame}
+                    className="absolute bottom-2 left-2 text-yellow-500 hover:text-yellow-300 transition-colors"
+                  >
+                    <ArrowRightLeft className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="aspect-video bg-[#4a362a] flex items-center justify-center text-sm text-white relative overflow-hidden">
+                  <canvas
+                    ref={canvasRef2}
+                    className="absolute inset-0 w-full h-full object-contain"
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </>
-    )}
+        </>
+      )}
     </div>
   );
 };

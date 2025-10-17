@@ -1,0 +1,14 @@
+export { default as Dashboard } from "./Dashboard";
+export { default as AdminLogin } from "./Login";
+export { default as RoleList } from "./roles";
+export { default as RoleDetail } from "./roles/detail";
+export { default as RoleForm } from "./roles/form";
+export { default as UserList } from "./users";
+export { default as UserDetail } from "./users/detail";
+export { default as UserForm } from "./users/form";
+export { default as CategoryList } from "./categories";
+export { default as CategoryDetail } from "./categories/detail";
+export { default as CategoryForm } from "./categories/form";
+export { default as GameList } from "./games";
+export { default as GameDetail } from "./games/detail";
+export { default as GameForm } from "./games/form";

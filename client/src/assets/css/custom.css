@@ -11,17 +11,54 @@ body {
 }
 a.active {
   font-weight: bold;
-  color: #1af7e5;
+  color: #e7f73b;
 }
 .bg-sidebar {
-  background-color: #024357;
+  background-color: #895108;
 }
 
 @keyframes marquee {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
 }
 .animate-marquee {
   display: inline-block;
   animation: marquee 15s linear infinite;
+}
+
+@keyframes loadingSlide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.loading-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 50%;
+  background-color: var(--main-color);
+  animation: loadingSlide 1s linear infinite;
+}
+
+@keyframes zoomInOut {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.5);
+  }
+}
+
+.logo-loader {
+  animation: zoomInOut 1s ease-in-out infinite;
 }

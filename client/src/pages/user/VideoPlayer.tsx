@@ -1,19 +1,24 @@
-import type { Camera, JSMpegPlayer } from "@/types";
-import { CalendarDays, Expand, Settings, SquareArrowOutUpRight } from "lucide-react";
+import type { Game, JSMpegPlayer } from "@/types";
+import {
+  CalendarDays,
+  Expand,
+  Settings,
+  SquareArrowOutUpRight,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface VideoPlayerProps {
-  camera: Camera;
+  game: Game;
   onBack: () => void;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ camera, onBack }) => {
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ game, onBack }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [player, setPlayer] = useState<JSMpegPlayer | null>(null);
 
   useEffect(() => {
-    if (!camera || !camera.active || !canvasRef.current) return;
+    if (!game || !game.active || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     canvas.width = 1920;
@@ -23,13 +28,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ camera, onBack }) => {
       try {
         const JSMpeg = (await import("jsmpeg-player")).default;
 
-        const isProduction = window.location.protocol === 'https:';
+        const isProduction = window.location.protocol === "https:";
         let videoUrl;
 
         if (isProduction) {
-          videoUrl = `wss://${window.location.host}/ws/${camera.wsPort}`;
+          videoUrl = `wss://${window.location.host}/ws/${game.wsPort}`;
         } else {
-          videoUrl = `ws://${window.location.hostname}:${camera.wsPort}`;
+          videoUrl = `ws://${window.location.hostname}:${game.wsPort}`;
         }
 
         const newPlayer = new JSMpeg.Player(videoUrl, {
@@ -55,7 +60,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ camera, onBack }) => {
       player?.destroy();
       setPlayer(null);
     };
-  }, [camera]);
+  }, [game]);
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
