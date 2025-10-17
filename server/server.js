@@ -1,136 +1,78 @@
-import { spawn } from 'child_process';
-import cors from 'cors';
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { WebSocketServer } from 'ws';
-import https from 'https';
-import http from 'http';
-import fs from 'fs';
+import { spawn } from "child_process";
+import cors from "cors";
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import { WebSocketServer } from "ws";
+import https from "https";
+import http from "http";
+import fs from "fs";
+import dotenv from "dotenv";
+import connectDB from "./config/database.js";
+import authRoute from "./routes/auth.js";
+import adminRoute from "./routes/admin.js";
+import authMiddleware from "./middleware/authMiddleware.js";
+import Game from "./models/Game.js";
+
+dotenv.config();
+connectDB();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = process.env.NODE_ENV === "production";
 let server;
 
 if (isProduction) {
   const sslOptions = {
-    cert: fs.readFileSync('/etc/letsencrypt/live/shalkaung.shop-0001/fullchain.pem'),
-    key: fs.readFileSync('/etc/letsencrypt/live/shalkaung.shop-0001/privkey.pem')
+    cert: fs.readFileSync(
+      "/etc/letsencrypt/live/shalkaung.shop-0001/fullchain.pem"
+    ),
+    key: fs.readFileSync(
+      "/etc/letsencrypt/live/shalkaung.shop-0001/privkey.pem"
+    ),
   };
   server = https.createServer(sslOptions, app);
-  console.log('Running in PRODUCTION mode with HTTPS');
+  console.log("Running in PRODUCTION mode with HTTPS");
 } else {
   server = http.createServer(app);
-  console.log('Running in DEVELOPMENT mode with HTTP');
+  console.log("Running in DEVELOPMENT mode with HTTP");
 }
 
 app.use(cors());
 app.use(express.json());
-app.use('/streams', express.static(path.join(__dirname, 'streams')));
+app.use("/streams", express.static(path.join(__dirname, "streams")));
 
-const cameras = [
-  {
-    id: 1,
-    category: 1,
-    code: 'G20',
-    name: '开牌',
-    url: 'rtsp://103.144.9.10:554/0',
-    wsPort: 9999,
-    active: false,
-    banker: 17,
-    player: 19,
-    tie: 5,
-    total: 41,
-  },
-  {
-    id: 2,
-    category: 1,
-    code: 'N8',
-    name: '开牌',
-    url: 'rtsp://103.144.9.10:554/0',
-    wsPort: 9998,
-    active: false,
-    banker: 17,
-    player: 19,
-    tie: 5,
-    total: 41,
-  },
-  {
-    id: 3,
-    category: 1,
-    code: 'G05',
-    name: '开牌',
-    url: 'rtsp://103.144.9.10:554/1',
-    wsPort: 9997,
-    active: false,
-    banker: 17,
-    player: 19,
-    tie: 5,
-    total: 41,
-  },
-  {
-    id: 4,
-    category: 2,
-    code: 'G06',
-    name: '开牌',
-    url: 'rtsp://103.144.9.10:554/0',
-    wsPort: 9994,
-    active: false,
-    banker: 17,
-    player: 19,
-    tie: 5,
-    total: 41,
-  },
-  {
-    id: 5,
-    category: 2,
-    code: 'G12',
-    name: '开牌',
-    url: 'rtsp://103.144.9.10:554/0',
-    wsPort: 9996,
-    active: false,
-    banker: 17,
-    player: 19,
-    tie: 5,
-    total: 41,
-  },
-  {
-    id: 6,
-    category: 3,
-    code: 'G13',
-    name: '开牌',
-    url: 'rtsp://103.144.9.10:554/0',
-    wsPort: 9995,
-    active: false,
-    banker: 17,
-    player: 19,
-    tie: 5,
-    total: 41,
-  }
-];
+app.use("/api/admin", authRoute);
+app.use("/api/admin", authMiddleware, adminRoute);
 
 const activeStreams = new Map();
 
-function createRTSPStream(cameraId, rtspUrl, wsPort) {
+function createRTSPStream(gameId, rtspUrl, wsPort) {
   const ffmpegArgs = [
-    '-i', rtspUrl,
-    '-f', 'mpegts',
-    '-codec:v', 'mpeg1video',
-    '-r', '25',
-    '-s', '1280x720',
-    '-b:v', '1000k',
-    '-bf', '0',
-    '-stats',
-    '-'
+    "-i",
+    rtspUrl,
+    "-f",
+    "mpegts",
+    "-codec:v",
+    "mpeg1video",
+    "-r",
+    "25",
+    "-s",
+    "1280x720",
+    "-b:v",
+    "1000k",
+    "-bf",
+    "0",
+    "-stats",
+    "-",
   ];
 
-  const ffmpegProcess = spawn('ffmpeg', ffmpegArgs, {
-    stdio: ['ignore', 'pipe', 'ignore']
+  const ffmpegProcess = spawn("ffmpeg", ffmpegArgs, {
+    stdio: ["ignore", "pipe", "ignore"],
   });
 
   let wss;
@@ -138,21 +80,21 @@ function createRTSPStream(cameraId, rtspUrl, wsPort) {
   if (isProduction) {
     wss = new WebSocketServer({
       server: server,
-      path: `/ws/${wsPort}`
+      path: `/ws/${wsPort}`,
     });
   } else {
     wss = new WebSocketServer({ port: wsPort });
   }
 
-  wss.on('connection', (ws) => {
-    console.log(`Client connected to camera ${cameraId}`);
+  wss.on("connection", (ws) => {
+    console.log(`Client connected to game ${gameId}`);
 
-    ws.on('close', () => {
-      console.log(`Client disconnected from camera ${cameraId}`);
+    ws.on("close", () => {
+      console.log(`Client disconnected from game ${gameId}`);
     });
   });
 
-  ffmpegProcess.stdout.on('data', (data) => {
+  ffmpegProcess.stdout.on("data", (data) => {
     wss.clients.forEach((client) => {
       if (client.readyState === client.OPEN) {
         client.send(data);
@@ -160,122 +102,141 @@ function createRTSPStream(cameraId, rtspUrl, wsPort) {
     });
   });
 
-  ffmpegProcess.on('error', (error) => {
-    console.error(`FFmpeg error for camera ${cameraId}:`, error);
+  ffmpegProcess.on("error", (error) => {
+    console.error(`FFmpeg error for game ${gameId}:`, error);
   });
 
-  ffmpegProcess.on('close', (code) => {
-    console.log(`FFmpeg process for camera ${cameraId} exited with code ${code}`);
+  ffmpegProcess.on("close", (code) => {
+    console.log(`FFmpeg process for game ${gameId} exited with code ${code}`);
     wss.close();
-    activeStreams.delete(cameraId);
+    activeStreams.delete(gameId);
   });
 
-  activeStreams.set(cameraId, {
+  activeStreams.set(gameId, {
     process: ffmpegProcess,
     wss: wss,
-    port: wsPort
+    port: wsPort,
   });
 
   return wsPort;
 }
 
-// API Routes
-app.get('/api/cameras', (req, res) => {
-  res.json(cameras.map(cam => ({
-    ...cam,
-    active: activeStreams.has(cam.id)
-  })));
+let games = [];
+
+async function loadGamesFromDB() {
+  try {
+    games = await Game.find({ active: true });
+    console.log(`Loaded ${games.length} games from DB`);
+  } catch (err) {
+    console.error("Failed to load games:", err);
+  }
+}
+
+app.post("/api/games/start-all", async (req, res) => {
+  try {
+    await loadGamesFromDB();
+
+    for (const game of games) {
+      if (!activeStreams.has(game.id)) {
+        createRTSPStream(game.id, game.url, game.wsPort);
+      }
+    }
+
+    res.json({ message: "All active games started successfully" });
+  } catch (error) {
+    console.error("Error starting all games:", error);
+    res.status(500).json({ error: "Failed to start all games" });
+  }
 });
 
-app.post('/api/cameras/:id/start', (req, res) => {
-  const cameraId = parseInt(req.params.id);
-  const camera = cameras.find(cam => cam.id === cameraId);
+app.post("/api/games/:id/start", (req, res) => {
+  const gameId = parseInt(req.params.id);
+  const game = games.find((cam) => cam.id === gameId);
 
-  if (!camera) {
-    return res.status(404).json({ error: 'Camera not found' });
+  if (!game) {
+    return res.status(404).json({ error: "Camera not found" });
   }
 
-  if (activeStreams.has(cameraId)) {
+  if (activeStreams.has(gameId)) {
     return res.json({
-      message: 'Stream already running',
-      wsPort: activeStreams.get(cameraId).port
+      message: "Stream already running",
+      wsPort: activeStreams.get(gameId).port,
     });
   }
 
   try {
-    const wsPort = createRTSPStream(cameraId, camera.url, camera.wsPort);
+    const wsPort = createRTSPStream(gameId, game.url, game.wsPort);
     res.json({
-      message: 'Stream started successfully',
-      wsPort: wsPort
+      message: "Stream started successfully",
+      wsPort: wsPort,
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to start stream: ' + error.message });
+    res.status(500).json({ error: "Failed to start stream: " + error.message });
   }
 });
 
-app.post('/api/cameras/:id/stop', (req, res) => {
-  const cameraId = parseInt(req.params.id);
-  const stream = activeStreams.get(cameraId);
+app.post("/api/games/:id/stop", (req, res) => {
+  const gameId = parseInt(req.params.id);
+  const stream = activeStreams.get(gameId);
 
   if (!stream) {
-    return res.status(404).json({ error: 'Stream not found' });
+    return res.status(404).json({ error: "Stream not found" });
   }
 
   try {
     stream.process.kill();
     stream.wss.close();
-    activeStreams.delete(cameraId);
-    res.json({ message: 'Stream stopped successfully' });
+    activeStreams.delete(gameId);
+    res.json({ message: "Stream stopped successfully" });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to stop stream' });
+    res.status(500).json({ error: "Failed to stop stream" });
   }
 });
 
-app.post('/api/cameras/:id/start-hls', (req, res) => {
-  const cameraId = parseInt(req.params.id);
-  const camera = cameras.find(cam => cam.id === cameraId);
+app.post("/api/games/:id/start-hls", (req, res) => {
+  const gameId = parseInt(req.params.id);
+  const game = games.find((cam) => cam.id === gameId);
 
-  if (!camera) {
-    return res.status(404).json({ error: 'Camera not found' });
+  if (!game) {
+    return res.status(404).json({ error: "Camera not found" });
   }
 
-  const outputPath = path.join(__dirname, 'streams', `camera${cameraId}`);
+  const outputPath = path.join(__dirname, "streams", `game${gameId}`);
 
   const ffmpegArgs = [
-    '-i', camera.url,
-    '-c:v', 'libx264',
-    '-c:a', 'aac',
-    '-f', 'hls',
-    '-hls_time', '2',
-    '-hls_list_size', '5',
-    '-hls_flags', 'delete_segments',
-    '-hls_segment_filename', `${outputPath}/segment%03d.ts`,
-    `${outputPath}/stream.m3u8`
+    "-i",
+    game.url,
+    "-c:v",
+    "libx264",
+    "-c:a",
+    "aac",
+    "-f",
+    "hls",
+    "-hls_time",
+    "2",
+    "-hls_list_size",
+    "5",
+    "-hls_flags",
+    "delete_segments",
+    "-hls_segment_filename",
+    `${outputPath}/segment%03d.ts`,
+    `${outputPath}/stream.m3u8`,
   ];
 
-  const ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
+  const ffmpegProcess = spawn("ffmpeg", ffmpegArgs);
 
-  activeStreams.set(cameraId, {
+  activeStreams.set(gameId, {
     process: ffmpegProcess,
-    type: 'hls',
-    outputPath: outputPath
+    type: "hls",
+    outputPath: outputPath,
   });
 
   res.json({
-    message: 'HLS stream started',
-    streamUrl: `http://localhost:${PORT}/streams/camera${cameraId}/stream.m3u8`
+    message: "HLS stream started",
+    streamUrl: `http://localhost:${PORT}/streams/game${gameId}/stream.m3u8`,
   });
 });
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-
-  cameras.forEach(camera => {
-    try {
-      console.log(`Starting stream for ${camera.name}...`);
-      createRTSPStream(camera.id, camera.url, camera.wsPort);
-    } catch (err) {
-      console.error(`Failed to start ${camera.name}:`, err);
-    }
-  });
 });
