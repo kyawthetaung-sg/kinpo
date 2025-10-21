@@ -1,6 +1,8 @@
 import {
   ArrowLeft,
+  ArrowRightLeft,
   Bell,
+  ChevronLeft,
   ChevronRight,
   CircleAlert,
   Eye,
@@ -15,6 +17,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  RotateCcw,
   Save,
   Settings,
   Undo2,
@@ -32,6 +35,7 @@ export const Icons = {
   dashboard: Gauge,
   hand: HandIcon,
   chevronRight: ChevronRight,
+  chevronLeft: ChevronLeft,
   settings: Settings,
   bell: Bell,
   mail: Mail,
@@ -42,4 +46,6 @@ export const Icons = {
   pencil: Pencil,
   plus: Plus,
   moreHorizontal: MoreHorizontal,
+  arrowRightLeft: ArrowRightLeft,
+  rotateCcw: RotateCcw,
 };

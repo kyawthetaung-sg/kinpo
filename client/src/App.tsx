@@ -3,10 +3,7 @@ import { Toaster } from "sonner";
 import AdminMain from "./layouts/admin/Main";
 import Main from "./layouts/user/Main";
 import Error from "./pages/Error";
-import {
-  Home,
-  Login,
-} from "./pages/user";
+import { Home, Login } from "./pages/user";
 import {
   AdminLogin,
   Dashboard,
@@ -31,9 +28,7 @@ function App() {
       path: "/",
       element: <Main />,
       errorElement: <Error />,
-      children: [
-        { index: true, element: <Home /> },
-      ],
+      children: [{ index: true, element: <Home /> }],
     },
     {
       path: "/login",

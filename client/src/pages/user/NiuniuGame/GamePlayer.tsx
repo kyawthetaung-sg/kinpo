@@ -6,13 +6,16 @@ import {
   SquareArrowOutUpRight,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import CardBoard from "./CardBoard";
+import { GameProvider } from "@/contexts/GameContext";
+import ResultTable from "./ResultTable";
 
-interface VideoPlayerProps {
+interface GamePlayerProps {
   game: Game;
   onBack: () => void;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ game, onBack }) => {
+const GamePlayer: React.FC<GamePlayerProps> = ({ game, onBack }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [player, setPlayer] = useState<JSMpegPlayer | null>(null);
@@ -83,6 +86,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ game, onBack }) => {
         </div>
       </div>
 
+      <GameProvider>
+        <div className="absolute bottom-0 border-neutral-700 bg-neutral-900 left-0 w-full">
+          <ResultTable />
+        </div>
+
+        <div className="absolute bottom-0 left-0 w-full">
+          <CardBoard />
+        </div>
+      </GameProvider>
+
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/70 text-red-400 text-lg font-medium">
           {error}
@@ -92,4 +105,4 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ game, onBack }) => {
   );
 };
 
-export default VideoPlayer;
+export default GamePlayer;

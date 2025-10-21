@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { JSMpegPlayer, Category, Game } from "@/types";
+import type { JSMpegPlayer, Category, Game, NiuniuResult } from "@/types";
 import {
   CalendarDays,
   CircleUserRound,
@@ -20,11 +20,12 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import VideoPlayer from "./VideoPlayer";
+import GamePlayer from "./NiuniuGame/GamePlayer";
 import { getCategories } from "@/api/category";
 import { getGames, startAllGames } from "@/api/game";
 import { useLoading } from "@/contexts/LoadingContext";
 import { toast } from "sonner";
+import { getNiuniuResults } from "@/api/niuniuResult";
 
 const Home = () => {
   const [time, setTime] = useState(new Date());
@@ -39,6 +40,7 @@ const Home = () => {
   const { setIsLoading } = useLoading();
   const [categories, setCategories] = useState<Category[]>([]);
   const [games, setGames] = useState<Game[]>([]);
+  const [winCounts, setWinCounts] = useState<number[]>([0, 0, 0, 0]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -74,6 +76,55 @@ const Home = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const fetchWinCounts = async () => {
+      try {
+        const results: NiuniuResult[] = await getNiuniuResults();
+
+        const players = ["庄", "闲1", "闲2", "闲3"];
+        const rounds = players.map((_, rowIndex) =>
+          results.map((r: NiuniuResult) => {
+            const bankerValue = r.banker;
+            const playerValue =
+              rowIndex === 0
+                ? bankerValue
+                : rowIndex === 1
+                  ? r.player1
+                  : rowIndex === 2
+                    ? r.player2
+                    : r.player3;
+
+            const win =
+              rowIndex === 0
+                ? [r.player1, r.player2, r.player3].some(
+                    (p) => p && bankerValue > p
+                  )
+                : playerValue && playerValue > bankerValue;
+
+            return { win };
+          })
+        );
+
+        const counts = [0, 0, 0, 0];
+        rounds.forEach((row, rowIndex) => {
+          if (rowIndex === 0) return; // skip banker
+          row.forEach((cell) => {
+            if (cell.win) {
+              counts[rowIndex - 1] += 1; // player win counts
+              counts[3] += 1; // total win count
+            }
+          });
+        });
+
+        setWinCounts(counts);
+      } catch (err) {
+        console.error("Failed to fetch Niuniu results:", err);
+      }
+    };
+
+    fetchWinCounts();
+  }, []);
 
   useEffect(() => {
     if (!games || games.length === 0 || selectedGame) return;
@@ -150,7 +201,7 @@ const Home = () => {
   return (
     <div className="h-screen overflow-hidden flex flex-col">
       {selectedGame ? (
-        <VideoPlayer game={selectedGame} onBack={() => setSelectedGame(null)} />
+        <GamePlayer game={selectedGame} onBack={() => setSelectedGame(null)} />
       ) : (
         <>
           <div className="h-16 bg-gradient-to-r from-[#3b2a1f] to-[#2c1f16] flex px-4 text-white">
@@ -278,20 +329,20 @@ const Home = () => {
                       <CardFooter>
                         <div className="grid grid-cols-4 gap-4 pb-3">
                           <div className="flex gap-2">
-                            <span className="text-red-600">庄</span>
-                            <span>17</span>
+                            <span className="text-red-600">闲1</span>
+                            <span>{winCounts[0]}</span>
                           </div>
                           <div className="flex gap-2">
-                            <span className="text-cyan-300">闲</span>
-                            <span>19</span>
+                            <span className="text-cyan-300">闲3</span>
+                            <span>{winCounts[1]}</span>
                           </div>
                           <div className="flex gap-2">
-                            <span className="text-lime-500">和</span>
-                            <span>5</span>
+                            <span className="text-lime-500">闲3</span>
+                            <span>{winCounts[2]}</span>
                           </div>
                           <div className="flex gap-2">
                             <span className="text-white">总数</span>
-                            <span>41</span>
+                            <span>{winCounts[3]}</span>
                           </div>
                         </div>
                       </CardFooter>

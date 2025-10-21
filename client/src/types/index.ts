@@ -50,3 +50,11 @@ export type Game = {
   category: Category;
   created_at: Date;
 };
+
+export type NiuniuResult = {
+  _id: string;
+  banker: number;
+  player1: number;
+  player2: number;
+  player3: number;
+};
